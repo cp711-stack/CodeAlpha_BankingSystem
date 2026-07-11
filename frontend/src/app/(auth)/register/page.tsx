@@ -1,0 +1,131 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Mail, Lock, Shield, User, Phone, MapPin } from "lucide-react";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const data = await api.register(formData);
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("customer", JSON.stringify(data.customer));
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card className="border-white/10 shadow-2xl shadow-primary/10">
+      <CardHeader className="space-y-3 text-center pt-8">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-secondary shadow-lg shadow-secondary/20">
+          <Shield className="h-6 w-6 text-white" />
+        </div>
+        <CardTitle className="text-3xl font-bold tracking-tight text-white">Create Account</CardTitle>
+        <CardDescription>Join FinVerse and experience modern banking</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400 border border-rose-500/20 text-center">
+              {error}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Input
+              name="name"
+              placeholder="Full Name"
+              icon={<User size={18} />}
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              name="email"
+              type="email"
+              placeholder="Email address"
+              icon={<Mail size={18} />}
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Input
+                name="phone"
+                placeholder="Phone Number"
+                icon={<Phone size={18} />}
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Input
+                name="password"
+                type="password"
+                placeholder="Password"
+                icon={<Lock size={18} />}
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Input
+              name="address"
+              placeholder="Residential Address"
+              icon={<MapPin size={18} />}
+              value={formData.address}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full mt-6" size="lg" isLoading={isLoading} variant="primary">
+            Register
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter className="flex justify-center pb-8">
+        <p className="text-sm text-gray-400">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:text-primary-dark font-medium transition-colors">
+            Sign in
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}

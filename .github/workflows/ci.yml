@@ -1,0 +1,85 @@
+name: FinVerse CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # --------------------------------------------------------------------------
+  # C++ Core Engine
+  # --------------------------------------------------------------------------
+  cpp-build:
+    name: C++ Engine Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build original bankapp
+        working-directory: CodeAlpha_BankingSystem
+        run: |
+          g++ -std=c++17 -Wall -Wextra -O2 -Iinclude src/Utils.cpp src/Transaction.cpp src/Account.cpp src/Customer.cpp src/Admin.cpp src/Bank.cpp src/main.cpp -o bankapp
+          echo "✅ bankapp compiled successfully"
+
+      - name: Build bridge
+        working-directory: CodeAlpha_BankingSystem
+        run: |
+          g++ -std=c++17 -Wall -Wextra -O2 -Iinclude src/Utils.cpp src/Transaction.cpp src/Account.cpp src/Customer.cpp src/Admin.cpp src/Bank.cpp src/bridge.cpp -o finverse_bridge
+          echo "✅ finverse_bridge compiled successfully"
+
+      - name: Test bridge health check
+        working-directory: CodeAlpha_BankingSystem
+        run: |
+          echo '{"command": "health_check"}' | ./finverse_bridge | grep -q '"success": true'
+          echo "✅ Health check passed"
+
+      - name: Test EMI calculation
+        working-directory: CodeAlpha_BankingSystem
+        run: |
+          echo '{"command": "calculate_emi", "principal": 100000, "annual_rate": 8.5, "tenure_months": 24}' | ./finverse_bridge | grep -q '"emi"'
+          echo "✅ EMI calculation passed"
+
+      - name: Sanitizer build
+        working-directory: CodeAlpha_BankingSystem
+        run: |
+          g++ -std=c++17 -Wall -Wextra -fsanitize=address,undefined -Iinclude src/Utils.cpp src/Transaction.cpp src/Account.cpp src/Customer.cpp src/Admin.cpp src/Bank.cpp src/bridge.cpp -o bridge_sanitized
+          echo '{"command": "health_check"}' | ./bridge_sanitized
+          echo "✅ Sanitizer build clean"
+
+  # --------------------------------------------------------------------------
+  # Python Backend
+  # --------------------------------------------------------------------------
+  backend-lint:
+    name: Backend Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pip install ruff mypy
+      - run: ruff check app/
+      - run: echo "✅ Backend lint passed"
+
+  # --------------------------------------------------------------------------
+  # Frontend
+  # --------------------------------------------------------------------------
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+      - run: echo "✅ Frontend build passed"

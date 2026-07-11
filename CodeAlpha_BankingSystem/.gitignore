@@ -1,0 +1,24 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.obj
+bankapp
+bankapp.exe
+
+# CMake
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake
+
+# Persistent runtime data (do not version customer/financial data)
+data/*.dat
+
+# Editor / OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
